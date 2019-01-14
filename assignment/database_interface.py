@@ -1,3 +1,13 @@
+"""
+Do Not change this file
+
+this file contains all scripts you need to complete this project
+
+Author  : Mehran Rafiee
+Mail    : mehranrafiee5@gmail.com
+"""
+
+
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
@@ -70,15 +80,16 @@ def add_notification(connection, message):
     return cursor.lastrowid
 
 
-def add_new_user(connection, username):
+def add_new_user(connection, username, password):
     """ add new push notification message to database
-        :param  connection : current connection to database
+        :param  connection  : current connection to database
         :param  username    : username of type string object
+        :param  password     : password of type string
         :return ID          : inserted ID
         """
 
-    bindings = (username, str(datetime.now()))
-    sql = '''Insert into User(Username, JoinDate) values (?,?)'''
+    bindings = (username, str(datetime.now()) , password)
+    sql = '''Insert into User(Username, JoinDate, Password) values (?,?,?)'''
 
     cursor = connection.cursor()
     cursor.execute(sql, bindings)
@@ -127,6 +138,8 @@ def update_visited_notification(connection, username, message_id):
     cursor = connection.cursor()
     cursor.execute(sql, bindings)
 
+    connection.commit()
+
     return cursor.lastrowid
 
 
@@ -144,7 +157,7 @@ def find_message(user, message_id):
 
 def get_unvisited_notifications(connection):
     """
-    description: determines which user should see what messages based on last chenges in database
+    description: determines which user should see what messages based on last changes in database
 
     :param connection: sqlite connection
     :return: list that contains Users object
@@ -220,23 +233,31 @@ def main():
     conn = create_connection(database)
 
     with conn:
+        print('database connected\n')
         while True:
-            print('database connected\n')
-            command = input("command instructions\n\n"
-                            "'add-notification' : for adding a new push notification\n"
-                            "'add-user'         : to add new user\n"
-                            "'query'            : to print all messages and users in database\n"
-                            "'exit'             : exit\n")
+            try:
+                command = input("command instructions\n\n"
+                                "'add-notification' : for adding a new push notification\n"
+                                "'add-user'         : to add new user\n"
+                                "'query'            : to print all messages and users in database\n"
+                                "'exit'             : exit\n")
 
-            if command == 'exit':
-                return
-            elif command == 'add-notification':
-                print('Notification ID:',
-                      add_notification(conn, input("insert new push notification message and hit enter:\n")))
-            elif command == 'add-user':
-                print('User ID:', add_new_user(conn, input("insert a username and hit enter:\n")))
-            elif command == 'query':
-                print_all_database_content(conn)
+                if command == 'exit':
+                    conn.commit()
+                    conn.close()
+                    return
+                elif command == 'add-notification':
+                    print('Notification ID:',
+                          add_notification(conn, input("insert new push notification message and hit enter:\n")))
+                elif command == 'add-user':
+                    (user, password) = input("insert a username and password (with space) then hit enter:(user pass)\n").split(' ')
+                    print('User ID:', add_new_user(conn, user,password))
+                elif command == 'query':
+                    print_all_database_content(conn)
+
+                conn.commit()
+            except:
+                print('Ops..!\t something goes wrong, please follow the instructions.')
 
 
 if __name__ == '__main__':

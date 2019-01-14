@@ -5,15 +5,16 @@
 
 you need to complete this file by creating a multi-threaded socket server
 
-1. create a socket server using TCP protocol
-2. server should create a thread per each client
-3. server only has two types of requests
-    3-1. handshake                               -- which is socket.accept() method
-    3-2. check if user exists in your database   -- use 'check_user_validation()' method
-    3-3. get all push notifications              -- server should respond this request by getting all unvisited messages in database for this user
+1. create a thread to check database for new messages every 5 seconds
+2. create a socket server using TCP protocol
+3. server should create a thread per each client
+4. server only has two types of requests
+    4-1. handshake                               -- which is socket.accept() method
+    4-2. check if user exists in your database   -- use 'check_user_validation()' method
+    4-3. get all push notifications              -- server should respond this request by getting all unvisited messages in database for this user
 
-4. after sending push notification to each user you need to call 'update_visited_notification'
-5. error handling: server must be able to handle wrong requests coming from clients
+5. after sending push notification to each user you need to call 'update_visited_notification'
+6. error handling: server must be able to handle wrong requests coming from clients
 """
 
 import socket
@@ -30,6 +31,8 @@ def run_server(host, port):
     :param host: host name
     :param port: port number
     """
+
+
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
