@@ -7,7 +7,6 @@ Author  : Mehran Rafiee
 Mail    : mehranrafiee5@gmail.com
 """
 
-
 import sqlite3
 from sqlite3 import Error
 from datetime import datetime
@@ -16,7 +15,10 @@ from datetime import datetime
 class User:
 
     def __init__(self, user_id, username, messages=None):
-        self.messages = list(messages)
+        if messages is not None:
+            self.messages = list(messages)
+        else:
+            self.messages = list()
         self.username = username
         self.user_id = user_id
 
@@ -88,7 +90,7 @@ def add_new_user(connection, username, password):
         :return ID          : inserted ID
         """
 
-    bindings = (username, str(datetime.now()) , password)
+    bindings = (username, str(datetime.now()), password)
     sql = '''Insert into User(Username, JoinDate, Password) values (?,?,?)'''
 
     cursor = connection.cursor()
@@ -122,17 +124,20 @@ def print_all_database_content(conn):
         print(row)
 
 
-def update_visited_notification(connection, username, message_id):
+def update_visited_notification(connection, user, message_id):
     """
-    description: after sending each message to its client you this method help you to update your database
+    after sending each message to its client you this method help you to update your database
 
     :param  connection  : current connection to database
-    :param  username    : username of type string object
+    :param  user    : user of type User object
     :param  message_id  : type integer
     :return ID          : inserted ID
     """
 
-    bindings = (message_id, username, str(datetime.now()))
+    if type(user) is not User:
+        return 'wrong type for user'
+
+    bindings = (message_id, user.user_id, str(datetime.now()))
     sql = '''Insert into visited_notifications(messageid, userid, notifieddate) values (?,?,?)'''
 
     cursor = connection.cursor()
@@ -179,7 +184,7 @@ def get_unvisited_notifications(connection):
     rows = cursor.fetchall()
     users = []
     for row in rows:
-        users.append(User(row[0], row[1]))
+        users.append(User(row[0], row[1], all_messages))
 
     sql = "select * from visited_notifications"
     cursor = connection.cursor()
@@ -193,14 +198,24 @@ def get_unvisited_notifications(connection):
         for user in users:
             for message in user.messages:
                 if user.user_id == row[2] and message.message_id == row[1]:
-                    dic[user.user_id] = message.message_id
-
-    for user_id, message_id in dic.items():
+                    if user.user_id not in dic.keys():
+                        dic[user.user_id] = [message.message_id]
+                    else:
+                        dic[user.user_id].append(message.message_id)
+    # print(dic)
+    for user_id, message_list in dic.items():
         user = find_user(users, user_id)
-        message = find_message(user, message_id)
-        user.remove_message(message)
+        for message_id in message_list:
+            message = find_message(user, message_id)
+            user.remove_message(message)
 
-    return users
+    final_users = []
+    for user in users:
+        if len(user.messages) == 0:
+            continue
+        final_users.append(user)
+
+    return final_users
 
 
 def check_user_validation(connection, username, password):
@@ -216,7 +231,7 @@ def check_user_validation(connection, username, password):
     bindings = (username, password)
     sql = "select UserID from User where Username = ? AND Password = ?"
     cursor = connection.cursor()
-    cursor.execute(sql,bindings)
+    cursor.execute(sql, bindings)
 
     rows = cursor.fetchall()
 
@@ -250,8 +265,9 @@ def main():
                     print('Notification ID:',
                           add_notification(conn, input("insert new push notification message and hit enter:\n")))
                 elif command == 'add-user':
-                    (user, password) = input("insert a username and password (with space) then hit enter:(user pass)\n").split(' ')
-                    print('User ID:', add_new_user(conn, user,password))
+                    (user, password) = input(
+                        "insert a username and password (with space) then hit enter:(user pass)\n").split(' ')
+                    print('User ID:', add_new_user(conn, user, password))
                 elif command == 'query':
                     print_all_database_content(conn)
 
